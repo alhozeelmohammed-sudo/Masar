@@ -6,17 +6,30 @@
 <meta name="theme-color" content="#111827">
 <title>مسار — ترتيب التوصيلات</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
 header{background:#111827;color:#fff;padding:18px 16px calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:5}
-h1{margin:0;font-size:25px}.sub{opacity:.75;font-size:13px;margin-top:4px}
-main{padding:14px;max-width:720px;margin:auto}.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
+h1{margin:0;font-size:27px}.sub{opacity:.78;font-size:14px;margin-top:5px}
+main{padding:14px;max-width:760px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
 button{border:0;border-radius:13px;padding:13px 15px;font-size:15px;font-weight:700;cursor:pointer}
-.primary{background:#111827;color:#fff;width:100%;font-size:17px}.secondary{background:#e5e7eb;color:#111827}.green{background:#dcfce7;color:#166534}.danger{background:#fee2e2;color:#991b1b}
+button:disabled{opacity:.55}
+.primary{background:#111827;color:#fff;width:100%;font-size:17px}
+.secondary{background:#e5e7eb;color:#111827}.green{background:#dcfce7;color:#166534}.danger{background:#fee2e2;color:#991b1b}
 input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-size:16px;margin:6px 0 10px;direction:rtl}
-.row{display:flex;gap:8px}.row>*{flex:1}.small{font-size:12px;color:#6b7280}.stop{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:9px 0}.stop.done{opacity:.55}.num{display:inline-flex;width:30px;height:30px;border-radius:50%;background:#111827;color:white;align-items:center;justify-content:center;margin-left:7px;font-weight:800}.stophead{display:flex;align-items:center;font-weight:800}.meta{font-size:13px;color:#6b7280;margin:6px 0 9px}.empty{text-align:center;color:#6b7280;padding:22px}
-.badge{display:inline-block;background:#eef2ff;color:#3730a3;padding:4px 8px;border-radius:99px;font-size:11px}
-.notice{font-size:13px;line-height:1.6;background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px}
-#status{margin-top:9px;font-size:13px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.small{font-size:12px;color:#6b7280;line-height:1.5}
+.stop{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:9px 0}
+.stop.done{opacity:.55}.num{display:inline-flex;width:32px;height:32px;border-radius:50%;background:#111827;color:white;align-items:center;justify-content:center;margin-left:7px;font-weight:800}
+.stophead{display:flex;align-items:center;font-weight:800}.meta{font-size:13px;color:#6b7280;margin:6px 0 9px;line-height:1.5}
+.empty{text-align:center;color:#6b7280;padding:22px}.badge{display:inline-block;background:#eef2ff;color:#3730a3;padding:4px 8px;border-radius:99px;font-size:11px}
+.notice{font-size:13px;line-height:1.65;background:#fff7ed;border:1px solid #fed7aa;padding:11px;border-radius:12px}
+#status,#routeStatus{margin-top:9px;font-size:13px;line-height:1.55}
+.progress{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:9px;display:none}
+.progress>div{height:100%;width:0;background:#111827;transition:width .2s}
+.routeSummary{background:#f8fafc;border:1px solid #e5e7eb;border-radius:13px;padding:11px;margin-top:10px;display:none}
+.kpi{display:flex;gap:8px}.kpi div{flex:1;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:9px}
+.kpi b{display:block;font-size:18px}.kpi span{font-size:11px;color:#6b7280}
 </style>
 </head>
 <body>
@@ -24,7 +37,7 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
 <main>
 <section class="card">
   <div class="row">
-    <button class="secondary" onclick="locate()">📍 موقعي الحالي</button>
+    <button class="secondary" id="locBtn" onclick="locate()">📍 موقعي الحالي</button>
     <button class="secondary" onclick="clearAll()">🗑️ مسح الكل</button>
   </div>
   <div id="status">لم يتم تحديد موقع البداية بعد.</div>
@@ -34,15 +47,21 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
   <h3 style="margin-top:0">إضافة شحنة</h3>
   <input id="name" placeholder="اسم العميل أو رقم الشحنة">
   <input id="dest" placeholder="الصق رابط Google Maps أو اكتب العنوان">
-  <div class="row">
-    <button class="primary" onclick="addStop()">＋ إضافة</button>
-  </div>
-  <div class="small">يمكنك لصق رابط موقع أرسله لك العميل عبر واتساب، أو كتابة العنوان.</div>
+  <button class="primary" id="addBtn" onclick="addStop()">＋ إضافة</button>
+  <div class="small">يمكنك لصق رابط موقع من واتساب/Google Maps أو كتابة العنوان. العنوان المكتوب سيتم تحويله تلقائيًا إلى موقع.</div>
 </section>
 
 <section class="card">
-  <button class="primary" onclick="optimize()">🚚 احسب ترتيب المسار</button>
-  <div id="routeStatus" class="small" style="margin-top:9px"></div>
+  <button class="primary" id="optBtn" onclick="optimize()">🚚 احسب أفضل مسار</button>
+  <div class="progress" id="progress"><div></div></div>
+  <div id="routeStatus"></div>
+  <div class="routeSummary" id="summary">
+    <div class="kpi">
+      <div><b id="sumStops">0</b><span>توقف</span></div>
+      <div><b id="sumKm">—</b><span>كم تقريبًا</span></div>
+      <div><b id="sumMin">—</b><span>دقيقة تقريبًا</span></div>
+    </div>
+  </div>
 </section>
 
 <section class="card">
@@ -51,94 +70,200 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
 </section>
 
 <section class="notice">
-  <b>ملاحظة:</b> هذه أول نسخة تعمل مباشرة على الآيفون. تستطيع حفظ الشحنات وفتح الملاحة. ترتيب المسار المحلي يعتمد على المواقع التي يمكن استخراج إحداثياتها من الروابط؛ التحسين الكامل لمسار 20–50 شحنة مع حساب الطرق الفعلية سيكون في المرحلة التالية.
+  <b>ما الذي تفعله هذه النسخة؟</b><br>
+  تحوّل العناوين إلى إحداثيات، وتحسب مسافات الطرق الفعلية، ثم ترتّب الشحنات باستخدام تحسين للمسار. للمسارات الكبيرة قد يستغرق الحساب بعض الوقت. الخدمة تعتمد على OpenStreetMap/OSRM العامة، لذلك هذه نسخة تجريبية وليست بعد خدمة تجارية مضمونة.
 </section>
 </main>
 
 <script>
-const KEY="masar_stops_v1";
+const KEY="masar_stops_v2", CUR="masar_current_v2";
 let stops=JSON.parse(localStorage.getItem(KEY)||"[]");
-let current=null;
+let current=JSON.parse(localStorage.getItem(CUR)||"null");
 
 function save(){localStorage.setItem(KEY,JSON.stringify(stops));render()}
-function esc(s){return (s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function setStatus(x){document.getElementById("status").textContent=x}
+function setProgress(show,p=0){const el=document.getElementById("progress");el.style.display=show?"block":"none";el.firstElementChild.style.width=Math.max(0,Math.min(100,p))+"%"}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 
 function locate(){
- if(!navigator.geolocation){setStatus("المتصفح لا يدعم تحديد الموقع.");return}
- setStatus("جاري تحديد موقعك…");
- navigator.geolocation.getCurrentPosition(p=>{
-   current={lat:p.coords.latitude,lng:p.coords.longitude};
-   localStorage.setItem("masar_current",JSON.stringify(current));
-   setStatus(`تم تحديد موقع البداية: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
- },()=>setStatus("تعذر تحديد الموقع. تأكد من السماح للموقع في Safari."),{enableHighAccuracy:true,timeout:15000});
+  if(!navigator.geolocation){setStatus("المتصفح لا يدعم تحديد الموقع.");return}
+  const b=document.getElementById("locBtn"); b.disabled=true; setStatus("جاري تحديد موقعك…");
+  navigator.geolocation.getCurrentPosition(p=>{
+    current={lat:p.coords.latitude,lng:p.coords.longitude};
+    localStorage.setItem(CUR,JSON.stringify(current));
+    setStatus(`تم تحديد موقع البداية: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
+    b.disabled=false;
+  },()=>{
+    setStatus("تعذر تحديد الموقع. تأكد من السماح للموقع في Safari.");
+    b.disabled=false;
+  },{enableHighAccuracy:true,timeout:20000,maximumAge:30000});
 }
-function setStatus(x){document.getElementById("status").textContent=x}
 
 function parseCoords(text){
- // Google Maps URLs often contain @lat,lng or /place/lat,lng
- let m=text.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
- if(!m) m=text.match(/(?:!3d)(-?\d+(?:\.\d+)?)(?:!4d)(-?\d+(?:\.\d+)?)/);
- if(m) return {lat:+m[1],lng:+m[2]};
- return null;
+  let m=text.match(/@(-?\\d+(?:\\.\\d+)?),\\s*(-?\\d+(?:\\.\\d+)?)/);
+  if(!m)m=text.match(/!3d(-?\\d+(?:\\.\\d+)?)!4d(-?\\d+(?:\\.\\d+)?)/);
+  if(!m)m=text.match(/[?&](?:query|destination)=(-?\\d+(?:\\.\\d+)?)[,%2C]+(-?\\d+(?:\\.\\d+)?)/i);
+  if(m)return {lat:+m[1],lng:+m[2]};
+  return null;
 }
-function addStop(){
- const name=document.getElementById("name").value.trim();
- const dest=document.getElementById("dest").value.trim();
- if(!dest){alert("اكتب العنوان أو الصق رابط الموقع أولاً.");return}
- stops.push({id:Date.now(),name:name||"عميل",dest,coords:parseCoords(dest),done:false});
- document.getElementById("name").value="";
- document.getElementById("dest").value="";
- save();
+
+async function geocode(text){
+  // Photon is convenient for browser use and supports Arabic/Hebrew/Latin queries.
+  const url="https://photon.komoot.io/api/?limit=1&q="+encodeURIComponent(text);
+  const r=await fetch(url,{headers:{"Accept":"application/json"}});
+  if(!r.ok)throw new Error("تعذر الاتصال بخدمة تحديد العنوان");
+  const j=await r.json();
+  const f=j.features&&j.features[0];
+  if(!f||!f.geometry||!f.geometry.coordinates)throw new Error("لم يتم العثور على موقع لهذا العنوان");
+  const [lng,lat]=f.geometry.coordinates;
+  return {lat,lng,label:f.properties&&[f.properties.name,f.properties.street,f.properties.housenumber,f.properties.city].filter(Boolean).join(" ")};
 }
+
+async function addStop(){
+  const name=document.getElementById("name").value.trim();
+  const dest=document.getElementById("dest").value.trim();
+  if(!dest){alert("اكتب العنوان أو الصق رابط الموقع أولاً.");return}
+  const btn=document.getElementById("addBtn"); btn.disabled=true;
+  let coords=parseCoords(dest), label=dest;
+  try{
+    if(!coords){
+      setStatus("جاري تحديد موقع العنوان…");
+      coords=await geocode(dest);
+      label=coords.label||dest;
+    }
+    stops.push({id:Date.now()+Math.random(),name:name||"عميل",dest,display:label,coords,done:false});
+    document.getElementById("name").value="";
+    document.getElementById("dest").value="";
+    save();
+    setStatus("تمت إضافة الشحنة وتحديد موقعها بنجاح.");
+  }catch(e){
+    alert("لم أستطع تحديد موقع العنوان تلقائيًا. جرّب كتابة العنوان بشكل أوضح أو الصق رابط Google Maps.");
+    setStatus("يمكنك إعادة المحاولة بعنوان أو رابط مختلف.");
+  }finally{btn.disabled=false}
+}
+
 function hav(a,b){
- const R=6371,rad=Math.PI/180;
- const dLat=(b.lat-a.lat)*rad,dLng=(b.lng-a.lng)*rad;
- const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
- return 2*R*Math.asin(Math.sqrt(x));
+  const R=6371,rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLng=(b.lng-a.lng)*rad;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
 }
-function optimize(){
- const pending=stops.filter(s=>!s.done);
- if(!pending.length){document.getElementById("routeStatus").textContent="لا توجد شحنات غير مكتملة.";return}
- if(!current){locate();document.getElementById("routeStatus").textContent="حدد موقعك أولاً ثم اضغط الزر مرة أخرى.";return}
- const withCoords=pending.filter(s=>s.coords);
- const without=pending.filter(s=>!s.coords);
- let ordered=[],pos=current, pool=[...withCoords];
- while(pool.length){
-   pool.sort((a,b)=>hav(pos,a.coords)-hav(pos,b.coords));
-   const next=pool.shift();ordered.push(next);pos=next.coords;
- }
- stops=[...ordered,...without,...stops.filter(s=>s.done)];
- save();
- document.getElementById("routeStatus").textContent=`تم ترتيب ${ordered.length} شحنة حسب أقرب موقع متاح. ${without.length?`هناك ${without.length} عنوان يحتاج تحديد موقع فعلي.`:""}`;
+
+// OSRM public routing service. It returns a road-distance/time matrix.
+async function roadMatrix(points){
+  const coords=points.map(p=>`${p.lng},${p.lat}`).join(";");
+  const url=`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=distance,duration`;
+  const r=await fetch(url);
+  if(!r.ok)throw new Error("تعذر حساب مسافات الطرق");
+  const j=await r.json();
+  if(j.code!=="Ok")throw new Error("خدمة الطرق لم تُرجع نتيجة");
+  return {d:j.distances,t:j.durations};
 }
+
+function routeCost(order,matrix){
+  let c=0; for(let i=0;i<order.length-1;i++) c+=matrix[order[i]][order[i+1]]||0; return c;
+}
+
+// Fast route optimizer for up to about 50 stops:
+// nearest insertion -> repeated 2-opt using the road-distance matrix.
+function optimizeOrder(matrix,n){
+  if(n<=2)return [...Array(n).keys()];
+  const un=new Set([...Array(n).keys()].slice(1));
+  let nearest=0,best=Infinity;
+  for(const i of un){const d=matrix[0][i];if(d<best){best=d;nearest=i}}
+  let route=[0,nearest]; un.delete(nearest);
+  while(un.size){
+    let bi=null, bp=1, bc=Infinity;
+    for(const x of un){
+      for(let p=0;p<route.length;p++){
+        const a=route[p], b=route[(p+1)%route.length] ?? 0;
+        const delta=(matrix[a][x]||0)+(matrix[x][b]||0)-(matrix[a][b]||0);
+        if(delta<bc){bc=delta;bi=x;bp=p+1}
+      }
+    }
+    route.splice(bp,0,bi);un.delete(bi);
+  }
+  // Keep start at index 0.
+  let improved=true, loops=0;
+  while(improved&&loops<8){
+    improved=false;loops++;
+    for(let i=1;i<route.length-2;i++){
+      for(let k=i+1;k<route.length-1;k++){
+        const a=route[i-1],b=route[i],c=route[k],d=route[k+1];
+        const old=(matrix[a][b]||0)+(matrix[c][d]||0);
+        const neu=(matrix[a][c]||0)+(matrix[b][d]||0);
+        if(neu+1<old){
+          const rev=route.slice(i,k+1).reverse();
+          route.splice(i,k-i+1,...rev); improved=true;
+        }
+      }
+    }
+  }
+  return route;
+}
+
+async function optimize(){
+  const pending=stops.filter(s=>!s.done);
+  if(!pending.length){document.getElementById("routeStatus").textContent="لا توجد شحنات غير مكتملة.";return}
+  if(!current){setStatus("حدد موقعك أولاً.");document.getElementById("routeStatus").textContent="اضغط «موقعي الحالي» ثم أعد المحاولة.";return}
+  const missing=pending.filter(s=>!s.coords);
+  if(missing.length){document.getElementById("routeStatus").textContent=`هناك ${missing.length} شحنة بلا موقع. احذفها أو أضف رابط/عنوان يمكن تحديده.`;return}
+
+  const btn=document.getElementById("optBtn");btn.disabled=true;setProgress(true,10);
+  try{
+    // Limit is deliberately generous but prevents accidental huge public-API requests.
+    if(pending.length>50)throw new Error("الحد الحالي 50 شحنة في عملية واحدة.");
+    const points=[current,...pending.map(s=>s.coords)];
+    setProgress(true,25);
+    const m=await roadMatrix(points);
+    setProgress(true,55);
+    const order=optimizeOrder(m.d,points.length);
+    const ordered=order.slice(1).map(i=>pending[i-1]);
+    const totalMeters=routeCost(order,m.d);
+    const totalSec=routeCost(order,m.t);
+    stops=[...ordered,...stops.filter(s=>s.done)];
+    save();
+    document.getElementById("sumStops").textContent=ordered.length;
+    document.getElementById("sumKm").textContent=(totalMeters/1000).toFixed(1);
+    document.getElementById("sumMin").textContent=Math.max(1,Math.round(totalSec/60));
+    document.getElementById("summary").style.display="block";
+    document.getElementById("routeStatus").textContent=`تم ترتيب ${ordered.length} شحنة حسب مسافات ومدة القيادة على الطرق.`;
+    setProgress(true,100); await sleep(250); setProgress(false);
+  }catch(e){
+    document.getElementById("routeStatus").textContent=e.message||"حدث خطأ أثناء حساب المسار. جرّب مرة أخرى.";
+    setProgress(false);
+  }finally{btn.disabled=false}
+}
+
 function nav(s){
- let url;
- if(s.coords) url=`https://www.google.com/maps/dir/?api=1&destination=${s.coords.lat},${s.coords.lng}`;
- else url=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.dest)}`;
- location.href=url;
+  if(!s)return;
+  const dest=s.coords?`${s.coords.lat},${s.coords.lng}`:s.dest;
+  location.href=`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
 }
 function done(id){const s=stops.find(x=>x.id===id);if(s){s.done=!s.done;save()}}
 function removeStop(id){stops=stops.filter(s=>s.id!==id);save()}
-function clearAll(){if(confirm("مسح كل الشحنات؟")){stops=[];save();document.getElementById("routeStatus").textContent=""}}
-function render(){
- document.getElementById("count").textContent=stops.filter(s=>!s.done).length;
- const box=document.getElementById("stops");
- if(!stops.length){box.innerHTML='<div class="empty">أضف أول شحنة للبدء.</div>';return}
- let n=0;
- box.innerHTML=stops.map(s=>{
-   if(!s.done)n++;
-   return `<div class="stop ${s.done?'done':''}">
-    <div class="stophead"><span class="num">${s.done?"✓":n}</span>${esc(s.name)}</div>
-    <div class="meta">${esc(s.dest)}</div>
-    <div class="row">
-      <button class="secondary" onclick="nav(stops.find(x=>x.id===${s.id}))">🧭 ملاحة</button>
-      <button class="${s.done?'green':'secondary'}" onclick="done(${s.id})">${s.done?"تم التسليم ✓":"تم التوصيل"}</button>
-      <button class="danger" onclick="removeStop(${s.id})">حذف</button>
-    </div>
-   </div>`
- }).join("");
+function clearAll(){
+  if(confirm("مسح كل الشحنات؟")){stops=[];save();document.getElementById("routeStatus").textContent="";document.getElementById("summary").style.display="none"}
 }
-const saved=localStorage.getItem("masar_current"); if(saved) current=JSON.parse(saved);
+function render(){
+  document.getElementById("count").textContent=stops.filter(s=>!s.done).length;
+  const box=document.getElementById("stops");
+  if(!stops.length){box.innerHTML='<div class="empty">أضف أول شحنة للبدء.</div>';return}
+  let n=0;
+  box.innerHTML=stops.map(s=>{
+    if(!s.done)n++;
+    const label=s.display||s.dest;
+    return `<div class="stop ${s.done?'done':''}">
+      <div class="stophead"><span class="num">${s.done?"✓":n}</span>${esc(s.name)}</div>
+      <div class="meta">${esc(label)}</div>
+      <div class="row">
+        <button class="secondary" onclick="nav(stops.find(x=>x.id==${s.id}))">🧭 ملاحة</button>
+        <button class="${s.done?'green':'secondary'}" onclick="done(${s.id})">${s.done?"تم التسليم ✓":"تم التوصيل"}</button>
+        <button class="danger" onclick="removeStop(${s.id})">حذف</button>
+      </div>
+    </div>`;
+  }).join("");
+}
 if(current)setStatus(`موقع البداية محفوظ: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
 render();
 </script>
