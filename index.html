@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>مسار — ترتيب التوصيلات</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:#fff;padding:18px 16px calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:25px}.sub{opacity:.75;font-size:13px;margin-top:4px}
+main{padding:14px;max-width:720px;margin:auto}.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
+button{border:0;border-radius:13px;padding:13px 15px;font-size:15px;font-weight:700;cursor:pointer}
+.primary{background:#111827;color:#fff;width:100%;font-size:17px}.secondary{background:#e5e7eb;color:#111827}.green{background:#dcfce7;color:#166534}.danger{background:#fee2e2;color:#991b1b}
+input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-size:16px;margin:6px 0 10px;direction:rtl}
+.row{display:flex;gap:8px}.row>*{flex:1}.small{font-size:12px;color:#6b7280}.stop{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:9px 0}.stop.done{opacity:.55}.num{display:inline-flex;width:30px;height:30px;border-radius:50%;background:#111827;color:white;align-items:center;justify-content:center;margin-left:7px;font-weight:800}.stophead{display:flex;align-items:center;font-weight:800}.meta{font-size:13px;color:#6b7280;margin:6px 0 9px}.empty{text-align:center;color:#6b7280;padding:22px}
+.badge{display:inline-block;background:#eef2ff;color:#3730a3;padding:4px 8px;border-radius:99px;font-size:11px}
+.notice{font-size:13px;line-height:1.6;background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px}
+#status{margin-top:9px;font-size:13px}
+</style>
+</head>
+<body>
+<header><h1>مسار</h1><div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
+<main>
+<section class="card">
+  <div class="row">
+    <button class="secondary" onclick="locate()">📍 موقعي الحالي</button>
+    <button class="secondary" onclick="clearAll()">🗑️ مسح الكل</button>
+  </div>
+  <div id="status">لم يتم تحديد موقع البداية بعد.</div>
+</section>
+
+<section class="card">
+  <h3 style="margin-top:0">إضافة شحنة</h3>
+  <input id="name" placeholder="اسم العميل أو رقم الشحنة">
+  <input id="dest" placeholder="الصق رابط Google Maps أو اكتب العنوان">
+  <div class="row">
+    <button class="primary" onclick="addStop()">＋ إضافة</button>
+  </div>
+  <div class="small">يمكنك لصق رابط موقع أرسله لك العميل عبر واتساب، أو كتابة العنوان.</div>
+</section>
+
+<section class="card">
+  <button class="primary" onclick="optimize()">🚚 احسب ترتيب المسار</button>
+  <div id="routeStatus" class="small" style="margin-top:9px"></div>
+</section>
+
+<section class="card">
+  <h3 style="margin-top:0">التوصيلات <span id="count" class="badge">0</span></h3>
+  <div id="stops"></div>
+</section>
+
+<section class="notice">
+  <b>ملاحظة:</b> هذه أول نسخة تعمل مباشرة على الآيفون. تستطيع حفظ الشحنات وفتح الملاحة. ترتيب المسار المحلي يعتمد على المواقع التي يمكن استخراج إحداثياتها من الروابط؛ التحسين الكامل لمسار 20–50 شحنة مع حساب الطرق الفعلية سيكون في المرحلة التالية.
+</section>
+</main>
+
+<script>
+const KEY="masar_stops_v1";
+let stops=JSON.parse(localStorage.getItem(KEY)||"[]");
+let current=null;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(stops));render()}
+function esc(s){return (s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+function locate(){
+ if(!navigator.geolocation){setStatus("المتصفح لا يدعم تحديد الموقع.");return}
+ setStatus("جاري تحديد موقعك…");
+ navigator.geolocation.getCurrentPosition(p=>{
+   current={lat:p.coords.latitude,lng:p.coords.longitude};
+   localStorage.setItem("masar_current",JSON.stringify(current));
+   setStatus(`تم تحديد موقع البداية: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
+ },()=>setStatus("تعذر تحديد الموقع. تأكد من السماح للموقع في Safari."),{enableHighAccuracy:true,timeout:15000});
+}
+function setStatus(x){document.getElementById("status").textContent=x}
+
+function parseCoords(text){
+ // Google Maps URLs often contain @lat,lng or /place/lat,lng
+ let m=text.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+ if(!m) m=text.match(/(?:!3d)(-?\d+(?:\.\d+)?)(?:!4d)(-?\d+(?:\.\d+)?)/);
+ if(m) return {lat:+m[1],lng:+m[2]};
+ return null;
+}
+function addStop(){
+ const name=document.getElementById("name").value.trim();
+ const dest=document.getElementById("dest").value.trim();
+ if(!dest){alert("اكتب العنوان أو الصق رابط الموقع أولاً.");return}
+ stops.push({id:Date.now(),name:name||"عميل",dest,coords:parseCoords(dest),done:false});
+ document.getElementById("name").value="";
+ document.getElementById("dest").value="";
+ save();
+}
+function hav(a,b){
+ const R=6371,rad=Math.PI/180;
+ const dLat=(b.lat-a.lat)*rad,dLng=(b.lng-a.lng)*rad;
+ const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+ return 2*R*Math.asin(Math.sqrt(x));
+}
+function optimize(){
+ const pending=stops.filter(s=>!s.done);
+ if(!pending.length){document.getElementById("routeStatus").textContent="لا توجد شحنات غير مكتملة.";return}
+ if(!current){locate();document.getElementById("routeStatus").textContent="حدد موقعك أولاً ثم اضغط الزر مرة أخرى.";return}
+ const withCoords=pending.filter(s=>s.coords);
+ const without=pending.filter(s=>!s.coords);
+ let ordered=[],pos=current, pool=[...withCoords];
+ while(pool.length){
+   pool.sort((a,b)=>hav(pos,a.coords)-hav(pos,b.coords));
+   const next=pool.shift();ordered.push(next);pos=next.coords;
+ }
+ stops=[...ordered,...without,...stops.filter(s=>s.done)];
+ save();
+ document.getElementById("routeStatus").textContent=`تم ترتيب ${ordered.length} شحنة حسب أقرب موقع متاح. ${without.length?`هناك ${without.length} عنوان يحتاج تحديد موقع فعلي.`:""}`;
+}
+function nav(s){
+ let url;
+ if(s.coords) url=`https://www.google.com/maps/dir/?api=1&destination=${s.coords.lat},${s.coords.lng}`;
+ else url=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.dest)}`;
+ location.href=url;
+}
+function done(id){const s=stops.find(x=>x.id===id);if(s){s.done=!s.done;save()}}
+function removeStop(id){stops=stops.filter(s=>s.id!==id);save()}
+function clearAll(){if(confirm("مسح كل الشحنات؟")){stops=[];save();document.getElementById("routeStatus").textContent=""}}
+function render(){
+ document.getElementById("count").textContent=stops.filter(s=>!s.done).length;
+ const box=document.getElementById("stops");
+ if(!stops.length){box.innerHTML='<div class="empty">أضف أول شحنة للبدء.</div>';return}
+ let n=0;
+ box.innerHTML=stops.map(s=>{
+   if(!s.done)n++;
+   return `<div class="stop ${s.done?'done':''}">
+    <div class="stophead"><span class="num">${s.done?"✓":n}</span>${esc(s.name)}</div>
+    <div class="meta">${esc(s.dest)}</div>
+    <div class="row">
+      <button class="secondary" onclick="nav(stops.find(x=>x.id===${s.id}))">🧭 ملاحة</button>
+      <button class="${s.done?'green':'secondary'}" onclick="done(${s.id})">${s.done?"تم التسليم ✓":"تم التوصيل"}</button>
+      <button class="danger" onclick="removeStop(${s.id})">حذف</button>
+    </div>
+   </div>`
+ }).join("");
+}
+const saved=localStorage.getItem("masar_current"); if(saved) current=JSON.parse(saved);
+if(current)setStatus(`موقع البداية محفوظ: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
+render();
+</script>
+</body>
+</html>
