@@ -159,15 +159,42 @@ function hav(a,b){
 async function roadMatrix(points){
   const coords=points.map(p=>`${p.lng},${p.lat}`).join(";");
   const url=`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=distance,duration`;
-  const r=await fetch(url);
-  if(!r.ok)throw new Error("تعذر حساب مسافات الطرق");
-  const j=await r.json();
-  if(j.code!=="Ok")throw new Error("خدمة الطرق لم تُرجع نتيجة");
-  return {d:j.distances,t:j.durations};
+  let j=null;
+  try{
+    const r=await fetch(url);
+    if(r.ok) j=await r.json();
+  }catch(e){}
+  if(!j || j.code!=="Ok" || !Array.isArray(j.distances) || !Array.isArray(j.durations)){
+    throw new Error("تعذر حساب مسافات الطرق. جرّب مرة أخرى.");
+  }
+
+  // بعض خدمات OSRM العامة قد ترجع خانات فارغة/صفوفًا ناقصة.
+  // نكملها بتقدير جغرافي حتى لا يتعطل ترتيب عدة شحنات.
+  const n=points.length;
+  const d=Array.from({length:n},(_,i)=>Array.from({length:n},(_,k)=>{
+    if(i===k)return 0;
+    const v=j.distances?.[i]?.[k];
+    if(Number.isFinite(v))return v;
+    return hav(points[i],points[k])*1000*1.25;
+  }));
+  const t=Array.from({length:n},(_,i)=>Array.from({length:n},(_,k)=>{
+    if(i===k)return 0;
+    const v=j.durations?.[i]?.[k];
+    if(Number.isFinite(v))return v;
+    // تقدير احتياطي: 45 كم/ساعة
+    return (d[i][k]/1000)/45*3600;
+  }));
+  return {d,t};
 }
 
 function routeCost(order,matrix){
-  let c=0; for(let i=0;i<order.length-1;i++) c+=matrix[order[i]][order[i+1]]||0; return c;
+  let c=0;
+  for(let i=0;i<order.length-1;i++){
+    const row=matrix[order[i]];
+    const v=row?.[order[i+1]];
+    c+=Number.isFinite(v)?v:0;
+  }
+  return c;
 }
 
 // Fast route optimizer for up to about 50 stops:
@@ -176,14 +203,17 @@ function optimizeOrder(matrix,n){
   if(n<=2)return [...Array(n).keys()];
   const un=new Set([...Array(n).keys()].slice(1));
   let nearest=0,best=Infinity;
-  for(const i of un){const d=matrix[0][i];if(d<best){best=d;nearest=i}}
+  for(const i of un){const d=Number.isFinite(matrix?.[0]?.[i])?matrix[0][i]:Infinity;if(d<best){best=d;nearest=i}}
   let route=[0,nearest]; un.delete(nearest);
   while(un.size){
     let bi=null, bp=1, bc=Infinity;
     for(const x of un){
       for(let p=0;p<=route.length;p++){
         const a=route[p-1], b=route[p];
-        const delta=b===undefined ? (matrix[a][x]||0) : (matrix[a][x]||0)+(matrix[x][b]||0)-(matrix[a][b]||0);
+        const ax=Number.isFinite(matrix?.[a]?.[x])?matrix[a][x]:Infinity;
+        const xb=b===undefined?0:(Number.isFinite(matrix?.[x]?.[b])?matrix[x][b]:Infinity);
+        const ab=b===undefined?0:(Number.isFinite(matrix?.[a]?.[b])?matrix[a][b]:Infinity);
+        const delta=b===undefined ? ax : ax+xb-ab;
         if(delta<bc){bc=delta;bi=x;bp=p}
       }
     }
@@ -196,8 +226,8 @@ function optimizeOrder(matrix,n){
     for(let i=1;i<route.length-2;i++){
       for(let k=i+1;k<route.length-1;k++){
         const a=route[i-1],b=route[i],c=route[k],d=route[k+1];
-        const old=(matrix[a][b]||0)+(matrix[c][d]||0);
-        const neu=(matrix[a][c]||0)+(matrix[b][d]||0);
+        const old=(Number.isFinite(matrix?.[a]?.[b])?matrix[a][b]:Infinity)+(Number.isFinite(matrix?.[c]?.[d])?matrix[c][d]:Infinity);
+        const neu=(Number.isFinite(matrix?.[a]?.[c])?matrix[a][c]:Infinity)+(Number.isFinite(matrix?.[b]?.[d])?matrix[b][d]:Infinity);
         if(neu+1<old){
           const rev=route.slice(i,k+1).reverse();
           route.splice(i,k-i+1,...rev); improved=true;
