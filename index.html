@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>مسار — ترتيب التوصيلات</title>
+<title>مسار — إدارة التوصيلات</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
-header{background:#111827;color:#fff;padding:18px 16px calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:5}
+header{background:#111827;color:#fff;padding:18px 16px calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:1000}
 h1{margin:0;font-size:27px}.sub{opacity:.78;font-size:14px;margin-top:5px}
 main{padding:14px;max-width:760px;margin:auto}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
@@ -30,6 +31,7 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
 .routeSummary{background:#f8fafc;border:1px solid #e5e7eb;border-radius:13px;padding:11px;margin-top:10px;display:none}
 .kpi{display:flex;gap:8px}.kpi div{flex:1;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:9px}
 .kpi b{display:block;font-size:18px}.kpi span{font-size:11px;color:#6b7280}
+#map{height:330px;border-radius:15px;margin-top:10px;overflow:hidden;display:none}.mapCard{display:none}.hint{font-size:12px;color:#6b7280;margin-top:8px}
 </style>
 </head>
 <body>
@@ -73,8 +75,11 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
   <b>ما الذي تفعله هذه النسخة؟</b><br>
   تحوّل العناوين إلى إحداثيات، وتحسب مسافات الطرق الفعلية، ثم ترتّب الشحنات باستخدام تحسين للمسار. للمسارات الكبيرة قد يستغرق الحساب بعض الوقت. الخدمة تعتمد على OpenStreetMap/OSRM العامة، لذلك هذه نسخة تجريبية وليست بعد خدمة تجارية مضمونة.
 </section>
+<section class="card mapCard" id="mapCard"><h3 style="margin-top:0">خريطة المسار</h3><div id="map"></div><div class="hint">الأرقام على الخريطة هي ترتيب التوصيل.</div></section>
+
 </main>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const KEY="masar_stops_v2", CUR="masar_current_v2";
 let stops=JSON.parse(localStorage.getItem(KEY)||"[]");
@@ -94,6 +99,7 @@ function locate(){
     localStorage.setItem(CUR,JSON.stringify(current));
     setStatus(`تم تحديد موقع البداية: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
     b.disabled=false;
+    if(typeof drawMap==="function") drawMap(stops.filter(s=>!s.done));
   },()=>{
     setStatus("تعذر تحديد الموقع. تأكد من السماح للموقع في Safari.");
     b.disabled=false;
@@ -175,10 +181,10 @@ function optimizeOrder(matrix,n){
   while(un.size){
     let bi=null, bp=1, bc=Infinity;
     for(const x of un){
-      for(let p=0;p<route.length;p++){
-        const a=route[p], b=route[(p+1)%route.length] ?? 0;
-        const delta=(matrix[a][x]||0)+(matrix[x][b]||0)-(matrix[a][b]||0);
-        if(delta<bc){bc=delta;bi=x;bp=p+1}
+      for(let p=0;p<=route.length;p++){
+        const a=route[p-1], b=route[p];
+        const delta=b===undefined ? (matrix[a][x]||0) : (matrix[a][x]||0)+(matrix[x][b]||0)-(matrix[a][b]||0);
+        if(delta<bc){bc=delta;bi=x;bp=p}
       }
     }
     route.splice(bp,0,bi);un.delete(bi);
@@ -228,6 +234,7 @@ async function optimize(){
     document.getElementById("sumMin").textContent=Math.max(1,Math.round(totalSec/60));
     document.getElementById("summary").style.display="block";
     document.getElementById("routeStatus").textContent=`تم ترتيب ${ordered.length} شحنة حسب مسافات ومدة القيادة على الطرق.`;
+    await drawMap(ordered);
     setProgress(true,100); await sleep(250); setProgress(false);
   }catch(e){
     document.getElementById("routeStatus").textContent=e.message||"حدث خطأ أثناء حساب المسار. جرّب مرة أخرى.";
@@ -238,10 +245,39 @@ async function optimize(){
 function nav(s){
   if(!s)return;
   const dest=s.coords?`${s.coords.lat},${s.coords.lng}`:s.dest;
-  location.href=`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+  const g=`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+  const a=`http://maps.apple.com/?daddr=${encodeURIComponent(dest)}&dirflg=d`;
+  if(confirm("فتح الملاحة في Google Maps؟\nاضغط إلغاء لاستخدام Apple Maps.")) location.href=g; else location.href=a;
 }
-function done(id){const s=stops.find(x=>x.id===id);if(s){s.done=!s.done;save()}}
-function removeStop(id){stops=stops.filter(s=>s.id!==id);save()}
+
+let map=null, markers=[], routeLayer=null;
+async function drawMap(ordered=stops.filter(s=>!s.done)){
+  if(!current && !ordered.length)return;
+  document.getElementById("mapCard").style.display="block";
+  document.getElementById("map").style.display="block";
+  if(!map){
+    const c=current||ordered[0].coords;
+    map=L.map("map").setView([c.lat,c.lng],12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+  }
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null}
+  if(current)markers.push(L.marker([current.lat,current.lng]).addTo(map).bindPopup("📍 نقطة البداية"));
+  ordered.forEach((s,i)=>markers.push(L.marker([s.coords.lat,s.coords.lng]).addTo(map).bindPopup(`${i+1}. ${esc(s.name)}`)));
+  const pts=[current,...ordered.map(s=>s.coords)].filter(Boolean);
+  if(pts.length>1){
+    try{
+      const coords=pts.map(p=>`${p.lng},${p.lat}`).join(";");
+      const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`);
+      const j=await r.json();
+      if(j.code==="Ok"&&j.routes?.[0]){routeLayer=L.geoJSON(j.routes[0].geometry).addTo(map);map.fitBounds(routeLayer.getBounds().pad(.12));}
+      else map.fitBounds(markers.map(m=>m.getLatLng()));
+    }catch(e){map.fitBounds(markers.map(m=>m.getLatLng()));}
+  }else if(markers.length)map.fitBounds(markers.map(m=>m.getLatLng()));
+  setTimeout(()=>map.invalidateSize(),200);
+}
+async function done(id){const s=stops.find(x=>x.id===id);if(s){s.done=!s.done;save();if(s.done)document.getElementById("routeStatus").textContent="تم تسجيل التسليم. اضغط «احسب أفضل مسار» لإعادة ترتيب الشحنات المتبقية.";await drawMap(stops.filter(x=>!x.done));}}
+function removeStop(id){stops=stops.filter(s=>s.id!==id);save();drawMap(stops.filter(s=>!s.done))}
 function clearAll(){
   if(confirm("مسح كل الشحنات؟")){stops=[];save();document.getElementById("routeStatus").textContent="";document.getElementById("summary").style.display="none"}
 }
@@ -266,6 +302,7 @@ function render(){
 }
 if(current)setStatus(`موقع البداية محفوظ: ${current.lat.toFixed(5)}, ${current.lng.toFixed(5)}`);
 render();
+if(current||stops.length)drawMap(stops.filter(s=>!s.done));
 </script>
 </body>
 </html>
