@@ -195,7 +195,8 @@ function parseCoords(text){
       }
     }
   }
-
+if(/waze\.com\/ul\/[a-z0-9]+/i.test(decoded)) return null;
+  
   // Last fallback: find any plausible latitude/longitude pair anywhere in the text.
   const nums=decoded.match(/-?\d+(?:\.\d+)?/g)||[];
   for(let i=0;i<nums.length-1;i++){
@@ -206,7 +207,15 @@ function parseCoords(text){
   }
   return null;
 }
-
+async function resolveWazeLink(url){
+  try{
+  const direct=parseCoords(url);
+  if(direct) return direct;
+  const r=await fetch(url,{redirect:"follow"});
+  const finalUrl=r.url;
+  return parseCoords(finalUrl);
+    }catch(e){return null;}
+  }
 async function geocode(text){
   // Photon is convenient for browser use and supports Arabic/Hebrew/Latin queries.
   const url="https://photon.komoot.io/api/?limit=1&q="+encodeURIComponent(text);
@@ -225,6 +234,7 @@ async function addStop(){
   if(!dest){alert("اكتب العنوان أو الصق رابط الموقع أولاً.");return}
   const btn=document.getElementById("addBtn"); btn.disabled=true;
   let coords=parseCoords(dest), label=dest;
+  if(!coords && /waze\.com/i.test(dest)) coords=await resolveWazeLink(dest);
   try{
     if(!coords){
       setStatus("جاري تحديد موقع العنوان…");
