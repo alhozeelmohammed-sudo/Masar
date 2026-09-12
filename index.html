@@ -376,7 +376,7 @@ async function optimize(){
 function nav(s){
   if(!s)return;
   const dest=s.coords?`${s.coords.lat},${s.coords.lng}`:s.dest;
-  const g=`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+  const g=`comgooglemaps://?daddr=${encodeURIComponent(dest)}&directionsmode=driving`;
   const a=`http://maps.apple.com/?daddr=${encodeURIComponent(dest)}&dirflg=d`;
   if(confirm("فتح الملاحة في Google Maps؟\nاضغط إلغاء لاستخدام Apple Maps.")) location.href=g; else location.href=a;
 }
