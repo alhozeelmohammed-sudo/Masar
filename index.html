@@ -110,7 +110,7 @@ function parseCoords(text){
   try{text=decodeURIComponent(text)}catch(e){}
   let m=text.match(/@(-?\\d+(?:\\.\\d+)?),\\s*(-?\\d+(?:\\.\\d+)?)/);
   if(!m)m=text.match(/!3d(-?\\d+(?:\\.\\d+)?)!4d(-?\\d+(?:\\.\\d+)?)/);
-  if(!m)m=text.match(/[?&](?:query|destination)=(-?\\d+(?:\\.\\d+)?)[,%2C]+(-?\\d+(?:\\.\\d+)?)/i);
+  if(!m)m=text.match(/[?&](?:q|query|destination)=(-?\\d+(?:\\.\\d+)?)[,%2C]+(-?\\d+(?:\\.\\d+)?)/i);
   if(!m)m=text.match(/[?&]ll=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i);
 if(!m)m=text.match(/[?&]to=ll\.(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/i);
   if(m)return {lat:+m[1],lng:+m[2]};
