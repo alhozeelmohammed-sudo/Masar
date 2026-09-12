@@ -60,12 +60,14 @@ input:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.12)}
 .green{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;font-weight:800}
 @media(max-width:600px){main{padding:14px}.card{padding:16px}button{font-size:16px}}  
 .inputRow{display:block;width:100%;margin-bottom:12px}.inputRow input{display:block;width:100%!important;min-width:100%!important;max-width:100%!important;box-sizing:border-box;min-height:52px;font-size:16px} 
+.topCard{background:#fff;border-radius:22px;padding:18px;margin-top:22px;box-shadow:0 8px 24px rgba(0,0,0,.10)}
+.topCard .row button{min-height:54px;font-size:16px;border-radius:15px}     
 </style>
 </head>
 <body>
 <header><h1>مسار</h1><div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
 <main>
-<section class="card">
+<section class="card topCard">
   <div class="row">
     <button class="secondary" id="locBtn" onclick="locate()">📍 موقعي الحالي</button>
     <button class="secondary" onclick="clearAll()">🗑️ مسح الكل</button>
