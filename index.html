@@ -9,17 +9,16 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
-header{background:#111827;color:#fff;padding:18px 16px calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:1000}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:linear-gradient(180deg,#07111f 0,#0c1b2d 220px,#f4f7fb 520px);color:#0f172a;min-height:100vh}
+header{background:linear-gradient(135deg,rgba(7,17,31,.97),rgba(12,35,58,.96));color:#fff;padding:22px 18px calc(20px + env(safe-area-inset-top));position:sticky;top:0;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.18);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 h1{margin:0;font-size:27px}.sub{opacity:.78;font-size:14px;margin-top:5px}
-main{padding:14px;max-width:760px;margin:auto}
-.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
-button{border:0;border-radius:13px;padding:13px 15px;font-size:15px;font-weight:700;cursor:pointer}
+main{padding:14px;max-width:760px;margin:
+   .card{background:rgba(255,255,255,.97);border-radius:22px;padding:18px;margin-bottom:14px;box-shadow:0 10px 30px rgba(15,23,42,.10);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}  
+button{border:0;border-radius:15px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 5px 14px rgba(15,23,42,.10)}
 button:disabled{opacity:.55}
-.primary{background:#111827;color:#fff;width:100%;font-size:17px}
-.secondary{background:#e5e7eb;color:#111827}.green{background:#dcfce7;color:#166534}.danger{background:#fee2e2;color:#991b1b}
-input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-size:16px;margin:6px 0 10px;direction:rtl}
-.row{display:flex;gap:8px}.row>*{flex:1}
+..primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;width:100%;font-weight:800;box-shadow:0 7px 18px rgba(37,99,235,..secondary{background:#eef2ff;color:#1e3a8a;border:1px solid #dbeafe;font-weight:700}
+input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-size:16px;margin:6px 0 10px;direction:rtl}input{width:100%;padding:15px;border:1px solid #dbe3f0;border-radius:14px;background:#fff;color:#111827;font-size:16px;outline:none;transition:.2s}
+input:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.12)}
 .small{font-size:12px;color:#6b7280;line-height:1.5}
 .stop{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:9px 0}
 .stop.done{opacity:.55}.num{display:inline-flex;width:32px;height:32px;border-radius:50%;background:#111827;color:white;align-items:center;justify-content:center;margin-left:7px;font-weight:800}
@@ -29,10 +28,10 @@ input{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:12px;font-s
 #status,#routeStatus{margin-top:9px;font-size:13px;line-height:1.55}
 .progress{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:9px;display:none}
 .progress>div{height:100%;width:0;background:#111827;transition:width .2s}
-.routeSummary{background:#f8fafc;border:1px solid #e5e7eb;border-radius:13px;padding:11px;margin-top:10px;display:none}
+.routeSummary{background:linear-gradient(135deg,#eff6ff,#f8fafc);border:1px solid #dbeafe;border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 6px 18px rgba(37,99,235,.07)}
 .kpi{display:flex;gap:8px}.kpi div{flex:1;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:9px}
 .kpi b{display:block;font-size:18px}.kpi span{font-size:11px;color:#6b7280}
-#map{height:330px;border-radius:15px;margin-top:10px;overflow:hidden;display:none}.mapCard{display:none}.hint{font-size:12px;color:#6b7280;margin-top:8px}
+#map{height:330px;border-radius:20px;margin-top:12px;border:1px solid #dbeafe;box-shadow:0 8px 24px rgba(15,23,42,.10);overflow:hidden}
 </style>
 </head>
 <body>
