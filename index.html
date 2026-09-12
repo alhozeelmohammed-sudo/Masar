@@ -40,6 +40,7 @@ input:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.12)}
 .secondary{background:#eef2ff;color:#1e3a8a;border:1px solid #dbeafe;font-weight:700}
 .green{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;font-weight:800}
 @media(max-width:600px){main{padding:14px}.card{padding:16px}button{font-size:16px}}  
+  .inputRow{display:flex;width:100%;margin-bottom:12px}.inputRow input{width:100%;min-height:52px;font-size:16px}   
 </style>
 </head>
 <body>
@@ -56,7 +57,10 @@ input:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.12)}
 <section class="card">
   <h3 style="margin-top:0">إضافة شحنة</h3>
   <input id="name" placeholder="اسم العميل أو رقم الشحنة">
+  <div class="inputRow">
   <input id="dest" placeholder="الصق رابط Google Maps أو Waze أو اكتب العنوان">
+ 
+</div>   
   <button class="primary" id="addBtn" onclick="addStop()">＋ إضافة</button>
   <div class="small">يمكنك لصق رابط موقع من واتساب/Google Maps أو Waze أو كتابة العنوان. العنوان المكتوب سيتم تحويله تلقائيًا إلى موقع.</div>
 </section>
