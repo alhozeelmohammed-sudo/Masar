@@ -95,10 +95,19 @@ header h1{font-size:32px;font-weight:900;letter-spacing:-.5px}
 header .sub{font-size:15px;margin-top:7px;opacity:.78}
 header{padding-top:26px;padding-bottom:24px}
      .topCard{margin-top:18px}
+     .bottomNav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,760px);display:flex;gap:6px;background:#07111f;padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:2000;box-shadow:0 -6px 24px rgba(15,23,42,.18)}
+     .bottomNav button{flex:1;background:transparent;color:#cbd5e1;box-shadow:none;padding:8px 4px;font-size:20px}
+     .bottomNav button span{display:block;font-size:11px;margin-top:3px}
+     main{padding-bottom:100px}
 </style>
 </head>
 <body>
 <header><h1>مسار</h1><div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
+  <nav class="bottomNav">
+    <button type="button">🏠<span>الرئيسية</span></button>
+    <button type="button">📦<span>الشحنات</span></button>
+    <button type="button">🗺️<span>الخريطة</span></button>
+    </nav>
 <main>
 <section class="card topCard">
   <div class="row">
