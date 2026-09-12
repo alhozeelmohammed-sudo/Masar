@@ -107,9 +107,9 @@ header{padding-top:26px;padding-bottom:24px}
 <body>
 <header><h1>مسار</h1><div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
   <nav class="bottomNav">
-    <button type="button">🏠<span>الرئيسية</span></button>
-    <button type="button">📦<span>الشحنات</span></button>
-    <button type="button">🗺️<span>الخريطة</span></button>
+    <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">🏠<span>الرئيسية</span></button>
+    <button type="button" onclick="document.querySelector('.deliveriesCard').scrollIntoView({behavior:'smooth'})">📦<span>الشحنات</span></button>
+   <button type="button" onclick="document.querySelector('.mapCard').scrollIntoView({behavior:'smooth'})">🗺️<span>الخريطة</span></button>
     </nav>
 <main>
 <section class="card topCard">
