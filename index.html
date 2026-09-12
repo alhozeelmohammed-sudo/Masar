@@ -114,7 +114,7 @@ function parseCoords(text){
   return null;
 }
 
-async function geocode(text)
+async function geocode(text){
   // Photon is convenient for browser use and supports Arabic/Hebrew/Latin queries.
   const url="https://photon.komoot.io/api/?limit=1&q="+encodeURIComponent(text);
   const r=await fetch(url,{headers:{"Accept":"application/json"}});
@@ -127,11 +127,6 @@ async function geocode(text)
 }
 
 async function addStop(){
-  if(stops.filter(s=>!s.done).length>=100){
-    alert("وصلت للحد الأقصى: 100 شحنة.");
-    return;
-  }
-  
   const name=document.getElementById("name").value.trim();
   const dest=document.getElementById("dest").value.trim();
   if(!dest){alert("اكتب العنوان أو الصق رابط الموقع أولاً.");return}
@@ -162,121 +157,37 @@ function hav(a,b){
 
 // OSRM public routing service. It returns a road-distance/time matrix.
 async function roadMatrix(points){
-  async function getTable(list){
-    const coords=list.map(p=>`${p.lng},${p.lat}`).join(";");
-    const url=`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=distance,duration`;
-
-    let j=null;
-    try{
-      const r=await fetch(url);
-      if(r.ok)j=await r.json();
-    }catch(e){}
-
-    if(!j||j.code!=="Ok"||
-       !Array.isArray(j.distances)||
-       !Array.isArray(j.durations)){
-      throw new Error("تعذر حساب مسافات الطرق. جرّب مرة أخرى.");
-    }
-
-    return j;
+  const coords=points.map(p=>`${p.lng},${p.lat}`).join(";");
+  const url=`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=distance,duration`;
+  let j=null;
+  try{
+    const r=await fetch(url);
+    if(r.ok) j=await r.json();
+  }catch(e){}
+  if(!j || j.code!=="Ok" || !Array.isArray(j.distances) || !Array.isArray(j.durations)){
+    throw new Error("تعذر حساب مسافات الطرق. جرّب مرة أخرى.");
   }
 
+  // بعض خدمات OSRM العامة قد ترجع خانات فارغة/صفوفًا ناقصة.
+  // نكملها بتقدير جغرافي حتى لا يتعطل ترتيب عدة شحنات.
   const n=points.length;
-
-  if(n<=100){
-    const j=await getTable(points);
-
-    const d=Array.from({length:n},(_,i)=>
-      Array.from({length:n},(_,k)=>{
-        if(i===k)return 0;
-        const v=j.distances?.[i]?.[k];
-        if(Number.isFinite(v))return v;
-        return hav(points[i],points[k])*1000*1.25;
-      })
-    );
-
-    const t=Array.from({length:n},(_,i)=>
-      Array.from({length:n},(_,k)=>{
-        if(i===k)return 0;
-        const v=j.durations?.[i]?.[k];
-        if(Number.isFinite(v))return v;
-        return (d[i][k]/1000)/45*3600;
-      })
-    );
-
-    return {d,t};
-  }
-
-  if(n===101){
-    const destinations=points.slice(1);
-
-    const destTable=await getTable(destinations);
-
-    const d=Array.from({length:n},()=>Array(n).fill(0));
-    const t=Array.from({length:n},()=>Array(n).fill(0));
-
-    for(let i=0;i<100;i++){
-      for(let k=0;k<100;k++){
-        if(i===k)continue;
-
-        const dv=destTable.distances?.[i]?.[k];
-        const tv=destTable.durations?.[i]?.[k];
-
-        d[i+1][k+1]=Number.isFinite(dv)
-          ? dv
-          : hav(destinations[i],destinations[k])*1000*1.25;
-
-        t[i+1][k+1]=Number.isFinite(tv)
-          ? tv
-          : (d[i+1][k+1]/1000)/45*3600;
-      }
-    }
-
-    const first=await getTable([
-      points[0],
-      ...destinations.slice(0,50)
-    ]);
-
-    const second=await getTable([
-      points[0],
-      ...destinations.slice(50)
-    ]);
-
-    for(let i=0;i<50;i++){
-      const dv=first.distances?.[0]?.[i+1];
-      const tv=first.durations?.[0]?.[i+1];
-
-      d[0][i+1]=Number.isFinite(dv)
-        ? dv
-        : hav(points[0],destinations[i])*1000*1.25;
-
-      t[0][i+1]=Number.isFinite(tv)
-        ? tv
-        : (d[0][i+1]/1000)/45*3600;
-    }
-
-    for(let i=0;i<50;i++){
-      const idx=i+50;
-      const dv=second.distances?.[0]?.[i+1];
-      const tv=second.durations?.[0]?.[i+1];
-
-      d[0][idx+1]=Number.isFinite(dv)
-        ? dv
-        : hav(points[0],destinations[idx])*1000*1.25;
-
-      t[0][idx+1]=Number.isFinite(tv)
-        ? tv
-        : (d[0][idx+1]/1000)/45*3600;
-    }
-
-    return {d,t};
-  }
-
-  throw new Error("الحد الأقصى 100 شحنة.");
+  const d=Array.from({length:n},(_,i)=>Array.from({length:n},(_,k)=>{
+    if(i===k)return 0;
+    const v=j.distances?.[i]?.[k];
+    if(Number.isFinite(v))return v;
+    return hav(points[i],points[k])*1000*1.25;
+  }));
+  const t=Array.from({length:n},(_,i)=>Array.from({length:n},(_,k)=>{
+    if(i===k)return 0;
+    const v=j.durations?.[i]?.[k];
+    if(Number.isFinite(v))return v;
+    // تقدير احتياطي: 45 كم/ساعة
+    return (d[i][k]/1000)/45*3600;
+  }));
+  return {d,t};
 }
-  
-          
-  {
+
+function routeCost(order,matrix){
   let c=0;
   for(let i=0;i<order.length-1;i++){
     const row=matrix[order[i]];
@@ -337,7 +248,7 @@ async function optimize(){
   const btn=document.getElementById("optBtn");btn.disabled=true;setProgress(true,10);
   try{
     // Limit is deliberately generous but prevents accidental huge public-API requests.
-    if(pending.length>100)throw new Error("الحد الحالي 50 شحنة في عملية واحدة.");
+    if(pending.length>50)throw new Error("الحد الحالي 50 شحنة في عملية واحدة.");
     const points=[current,...pending.map(s=>s.coords)];
     setProgress(true,25);
     const m=await roadMatrix(points);
