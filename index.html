@@ -118,20 +118,22 @@ header{padding-top:26px;padding-bottom:24px}
      .bottomNav button{flex:1;background:transparent;color:#cbd5e1;box-shadow:none;padding:8px 4px;font-size:20px}
      .bottomNav button span{display:block;font-size:11px;margin-top:3px}
      main{padding-bottom:100px}
-  .bottomNav button:first-child{color:#3b82f6;background:rgba(59,130,246,.12);border-radius:14px}
+  
   .bottomNav{border-top:1px solid rgba(255,255,255,.08)}
   .bottomNav{padding-top:6px}
+  .bottomNav button.active{color:#3b82f6;background:rgba(59,130,246,.12);border-radius:14px}
 </style>
 </head>
 <body>
 <header><h1><span>📍</span> مسار</h1> <div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
   <nav class="bottomNav">
- <button type="button" onclick="showPage('homePage')">🏠<span>الرئيسية</span></button>   
+ <button type="button" class="active" onclick="showPage('homePage')">🏠<span>الرئيسية</span></button>   
  <button type="button" onclick="showPage('shipmentsPage')">📦<span>الشحنات</span></button>   
   <button type="button" onclick="showPage('mapPage')">🗺️<span>الخريطة</span></button> 
     </nav>
  <script>
  function showPage(id){document.querySelectorAll('.appPage').forEach(p=>p.style.display='none');document.getElementById(id).style.display='block';window.scrollTo(0,0);document.querySelector('.infoCard').style.display=id==='homePage'?'block':'none';}
+ document.querySelectorAll('.bottomNav button').forEach((b,i)=>b.onclick=((old=>function(){old.call(this);document.querySelectorAll('.bottomNav button').forEach(x=>x.classList.remove('active'));this.classList.add('active')})(b.onclick)));  
    
   </script> 
 <main>
