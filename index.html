@@ -126,11 +126,15 @@ header{padding-top:26px;padding-bottom:24px}
 <body>
 <header><h1><span>📍</span> مسار</h1> <div class="sub">رتّب توصيلاتك وانطلق من موقعك الحالي</div></header>
   <nav class="bottomNav">
-    <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">🏠<span>الرئيسية</span></button>
-    <button type="button" onclick="document.querySelector('.deliveriesCard').scrollIntoView({behavior:'smooth'})">📦<span>الشحنات</span></button>
-   <button type="button" onclick="document.querySelector('.mapCard').scrollIntoView({behavior:'smooth'})">🗺️<span>الخريطة</span></button>
+ <button type="button" onclick="showPage('homePage')">🏠<span>الرئيسية</span></button>   
+ <button type="button" onclick="showPage('shipmentsPage')">📦<span>الشحنات</span></button>   
+  <button type="button" onclick="showPage('mapPage')">🗺️<span>الخريطة</span></button> 
     </nav>
+ <script>
+ function showPage(id){document.querySelectorAll('.appPage').forEach(p=>p.style.display='none');document.getElementById(id).style.display='block';window.scrollTo(0,0)}
+  </script> 
 <main>
+ <div id="homePage" class="appPage"> 
 <section class="card topCard">
   <div class="row">
     <button class="secondary" id="locBtn" onclick="locate()">📍 موقعي الحالي</button>
@@ -162,17 +166,21 @@ header{padding-top:26px;padding-bottom:24px}
     </div>
   </div>
 </section>
-
+</div>
+ <div id="shipmentsPage" class="appPage" style="display:none"> 
 <section class="card deliveriesCard">
   <h3 style="margin-top:0">التوصيلات <span id="count" class="badge">0</span></h3>
   <div id="stops"></div>
 </section>
-
+</div>
 <section class="notice infoCard">
   <b>ما الذي تفعله هذه النسخة؟</b><br>
   تحوّل العناوين إلى إحداثيات، وتحسب مسافات الطرق الفعلية، ثم ترتّب الشحنات باستخدام تحسين للمسار. للمسارات الكبيرة قد يستغرق الحساب بعض الوقت. الخدمة تعتمد على OpenStreetMap/OSRM العامة، لذلك هذه نسخة تجريبية وليست بعد خدمة تجارية مضمونة.
 </section>
+<div id="mapPage" class="appPage" style="display:none">  
 <section class="card mapCard" id="mapCard"><h3 style="margin-top:0">خريطة المسار</h3><div id="map"></div><div class="hint">الأرقام على الخريطة هي ترتيب التوصيل.</div></section>
+</div>  
+  
 
 </main>
 
