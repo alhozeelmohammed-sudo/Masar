@@ -131,7 +131,8 @@ header{padding-top:26px;padding-bottom:24px}
   <button type="button" onclick="showPage('mapPage')">🗺️<span>الخريطة</span></button> 
     </nav>
  <script>
- function showPage(id){document.querySelectorAll('.appPage').forEach(p=>p.style.display='none');document.getElementById(id).style.display='block';window.scrollTo(0,0)}
+ function showPage(id){document.querySelectorAll('.appPage').forEach(p=>p.style.display='none');document.getElementById(id).style.display='block';window.scrollTo(0,0);document.querySelector('.infoCard').style.display=id==='homePage'?'block':'none';}
+   
   </script> 
 <main>
  <div id="homePage" class="appPage"> 
